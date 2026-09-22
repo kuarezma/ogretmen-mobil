@@ -1,0 +1,17 @@
+{
+  "short_name": "Öğretmen",
+  "name": "Öğretmen Asistanı Mobil",
+  "description": "Öğretmenler için Sınıf Defteri Kazanım ve Evrak Merkezi",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#1F4E79",
+  "theme_color": "#1F4E79",
+  "display": "standalone",
+  "orientation": "portrait"
+}
