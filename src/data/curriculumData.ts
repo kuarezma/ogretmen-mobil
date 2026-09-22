@@ -569,22 +569,119 @@ export const CURRICULUM_DATA: CurriculumItem[] = [
 ];
 
 // Belirli bir sınıf, ders ve haftaya göre kazanım getiren yardımcı fonksiyon
-export function getCurriculumItem(grade: number, subjectKey: string, weekNumber: number): CurriculumItem | undefined {
-  // Önce tam eşleşme ara
-  let item = CURRICULUM_DATA.find(c => c.grade === grade && c.subjectKey === subjectKey && c.weekNumber === weekNumber);
-  
-  if (!item) {
-    // Aynı sınıf ve derse ait en yakın kazanımı ara
-    const subjectItems = CURRICULUM_DATA.filter(c => c.grade === grade && c.subjectKey === subjectKey);
-    if (subjectItems.length > 0) {
-      item = subjectItems[0];
-    }
+export function getCurriculumItem(grade: number, subjectKey: string, weekNumber: number): CurriculumItem {
+  const items = getCurriculumForWeek(grade, subjectKey, weekNumber);
+  return items[0];
+}
+
+// 36 haftanın tamamı için akıllı MEB kazanım getirme fonksiyonu
+export function getCurriculumForWeek(grade: number, subjectKey: string, weekNumber: number): CurriculumItem[] {
+  // 1. Önce veri tabanında birebir eşleşen kazanımları ara
+  const directMatches = CURRICULUM_DATA.filter(
+    c => c.grade === grade && c.subjectKey === subjectKey && c.weekNumber === weekNumber
+  );
+
+  if (directMatches.length > 0) {
+    return directMatches;
   }
 
-  return item;
+  // 2. Eğer o haftaya özel kayıt yoksa, MEB 36 haftalık müfredat döngüsüne göre üret
+  const subjectObj = SUBJECT_OPTIONS.find(s => s.key === subjectKey) || SUBJECT_OPTIONS[0];
+  const subjectName = subjectObj.name;
+
+  let unitNumber = 1;
+  let unitTitle = "Öğrenme Alanı ve Kavramlar";
+  let code = `K.${grade}.${weekNumber}.1`;
+  let desc = "";
+  let snippet = "";
+  let methods = ["Buluş Yolu", "Soru-Cevap", "Modelleme"];
+  let tools = ["Ders Kitabı", "Akıllı Tahta", "Etkinlik Kağıtları"];
+  let values = ["Sorumluluk", "Çalışkanlık", "Öz Denetim"];
+
+  if (weekNumber === 9) {
+    unitNumber = 2;
+    unitTitle = "1. Dönem 1. Yazılı Sınav Dönemi";
+    code = `${grade}.YAZILI.1`;
+    desc = "1. Dönem 1. Ortak Yazılı Sınavı uygulanır; sınav sorularının analizi ve öğrenme eksikliklerinin telafisi yapılır.";
+    snippet = `${grade}. Sınıf ${subjectName}: 1. Dönem 1. Ortak Yazılı Sınavı yapıldı, soru çözümleri ve dönütler verildi.`;
+  } else if (weekNumber === 15) {
+    unitNumber = 3;
+    unitTitle = "1. Dönem 2. Yazılı Sınav Dönemi";
+    code = `${grade}.YAZILI.2`;
+    desc = "1. Dönem 2. Ortak Yazılı Sınavı uygulanır; konu kavrama seviyeleri değerlendirilir.";
+    snippet = `${grade}. Sınıf ${subjectName}: 1. Dönem 2. Ortak Yazılı Sınavı uygulandı ve sınav analiz formu düzenlendi.`;
+  } else if (weekNumber === 18) {
+    unitNumber = 3;
+    unitTitle = "1. Dönem Sonu Değerlendirme";
+    code = `${grade}.DÖNEM.1`;
+    desc = "1. Dönem boyunca işlenen tüm ünitelerin genel tekrarı ve kazanım değerlendirmesi yapılır.";
+    snippet = `${grade}. Sınıf ${subjectName}: 1. Dönem genel tekrarı yapıldı, kazanım değerlendirme testleri çözüldü.`;
+  } else if (weekNumber === 26) {
+    unitNumber = 4;
+    unitTitle = "2. Dönem 1. Yazılı Sınav Dönemi";
+    code = `${grade}.YAZILI.3`;
+    desc = "2. Dönem 1. Ortak Yazılı Sınavı uygulanır ve süreç değerlendirme ölçekleri işlenir.";
+    snippet = `${grade}. Sınıf ${subjectName}: 2. Dönem 1. Ortak Yazılı Sınavı uygulandı, başarı analizleri tamamlandı.`;
+  } else if (weekNumber === 33) {
+    unitNumber = 5;
+    unitTitle = "2. Dönem 2. Yazılı Sınav Dönemi";
+    code = `${grade}.YAZILI.4`;
+    desc = "2. Dönem 2. Ortak Yazılı Sınavı uygulanır; dönem sonu başarı grafiği incelenir.";
+    snippet = `${grade}. Sınıf ${subjectName}: 2. Dönem 2. Ortak Yazılı Sınavı uygulandı, yazılı değerlendirmesi yapıldı.`;
+  } else if (weekNumber >= 35) {
+    unitNumber = 6;
+    unitTitle = "Yıl Sonu Kapanış ve Genel Tekrar";
+    code = `${grade}.KAPANIŞ`;
+    desc = "Eğitim öğretim yılı boyunca edinilen beceri ve kök değerler pekiştirilir; proje sergisi ve yıl sonu etkinlikleri tamamlanır.";
+    snippet = `${grade}. Sınıf ${subjectName}: Yıl sonu kazanım tekrarı, beceri temelli soru çözümleri ve kapanış etkinlikleri yapıldı.`;
+  } else if (weekNumber >= 10 && weekNumber <= 14) {
+    unitNumber = 2;
+    unitTitle = grade === 5 ? "Kesirler ve Kesirlerle İşlemler" : grade === 6 ? "Kesirler ve Ondalık Gösterim" : grade === 7 ? "Rasyonel Sayılarla İşlemler" : "Kareköklü İfadeler";
+    code = `M.${grade}.2.${weekNumber - 9}.1`;
+    desc = `${unitTitle} konusunda temel kavramlar somutlaştırılır, modelleme ve problem çözme etkinlikleri yürütülür.`;
+    snippet = `M.${grade}.2. ${unitTitle} ünitesine ait kazanımlar işlendi, örnek sorular çözüldü ve deftere işlendi.`;
+  } else if (weekNumber >= 16 && weekNumber <= 17) {
+    unitNumber = 3;
+    unitTitle = grade === 5 ? "Ondalık Gösterim ve Yüzdeler" : grade === 6 ? "Oran ve Orantı" : grade === 7 ? "Cebirsel İfadeler" : "Veri Analizi ve Olasılık";
+    code = `M.${grade}.3.${weekNumber - 15}.1`;
+    desc = `${unitTitle} konusu kapsamında günlük hayat ilişkileri kurulur ve beceri temelli alıştırmalar yapılır.`;
+    snippet = `M.${grade}.3. ${unitTitle} konusuna ait kavramlar pekiştirildi, defter çalışması yapıldı.`;
+  } else if (weekNumber >= 19 && weekNumber <= 25) {
+    unitNumber = 4;
+    unitTitle = grade === 5 ? "Temel Geometrik Kavramlar ve Üçgenler" : grade === 6 ? "Cebirsel İfadeler ve Açılar" : grade === 7 ? "Eşitlik, Denklem ve Çember" : "Doğrusal Denklemler ve Eşitsizlikler";
+    code = `M.${grade}.4.${weekNumber - 18}.1`;
+    desc = `${unitTitle} kavramları çizim, açıölçer ve dinamik geometri yazılımları ile incelenir.`;
+    snippet = `M.${grade}.4. ${unitTitle} ünitesi kazanımları işlendi, geometrik çizim ve alıştırmalar yapıldı.`;
+  } else {
+    unitNumber = 5;
+    unitTitle = grade === 5 ? "Veri İşleme ve Alan Ölçme" : grade === 6 ? "Alan ve Hacim Ölçme" : grade === 7 ? "Veri Analizi ve Cisimlerin Görünümü" : "Geometrik Cisimler ve Dönüşüm Geometrisi";
+    code = `M.${grade}.5.${weekNumber - 26}.1`;
+    desc = `${unitTitle} kapsamında ölçme teknikleri, birim dönüşümleri ve grafik analizleri uygulanır.`;
+    snippet = `M.${grade}.5. ${unitTitle} konusu işlendi, ölçme ve modelleme etkinlikleri deftere aktarıldı.`;
+  }
+
+  return [
+    {
+      id: `${subjectKey}_${grade}_w${weekNumber}`,
+      level: subjectObj.level,
+      grade,
+      subject: subjectName,
+      subjectKey,
+      unitNumber,
+      unitTitle,
+      weekNumber,
+      code,
+      description: desc,
+      notebookSnippet: snippet,
+      methods,
+      tools,
+      values
+    }
+  ];
 }
 
 // Tüm ders seçeneklerini döndür
 export function getSubjectsByLevel(level: 'İlkokul' | 'Ortaokul' | 'Lise') {
   return SUBJECT_OPTIONS.filter(s => s.level === level);
 }
+
